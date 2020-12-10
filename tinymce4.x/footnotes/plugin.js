@@ -1,5 +1,5 @@
 tinymce.PluginManager.add('footnotes', function(editor) {
-
+    var footnoteText = null;
     function replaceTmpl(str, data) {
         var result = str;
         for (var key in data) {
@@ -9,8 +9,10 @@ tinymce.PluginManager.add('footnotes', function(editor) {
     }
 
     function showDialog() {
-        var selectedNode = editor.selection.getNode(), name = '',
-            isFootNotes = selectedNode.tagName == 'SPAN' && editor.dom.getAttrib(selectedNode, 'class') === 'fnoteWrap';
+        var selectedNode = editor.selection.getNode();
+        var selectedRange = editor.selection.getRng().endContainer;
+        var name = '';
+        var isFootNotes = selectedNode.tagName == 'SPAN' && editor.dom.getAttrib(selectedNode, 'class') === 'fnoteWrap';
 
         var selectIndex = (function(){
             if (selectedNode.className == 'fnoteWrap') {
@@ -27,7 +29,7 @@ tinymce.PluginManager.add('footnotes', function(editor) {
         }
 
         editor.windowManager.open({
-            title: "Insert a contents",
+            title: "Insert contents for footnote",
             id: 'footnote-dialog',
             body: {
                 type: 'textbox',
@@ -35,17 +37,18 @@ tinymce.PluginManager.add('footnotes', function(editor) {
                 multiline: true,
                 minWidth: 520,
                 minHeight: 100,
-                value : name
+                value: name
             },
             onSubmit: function(e) {
-                var newfootnoteContent = e.data.name,
+                var newfootnoteContent = footnoteText,
                     fixFootnoteContent = (function () {
-                        return encodeURIComponent(newfootnoteContent);
+                        return newfootnoteContent;
                     }()),
-                    htmlTemplate = '<span class="fnoteWrap" id="#wk_ft{FOOTNOTE_INDEX}" contenteditable="false"><button type="button" class="fnoteBtn" data-content="'+fixFootnoteContent+'">{FOOTNOTE_INDEX}</button></span>&nbsp;',
-                    totalFootNote = editor.getDoc().querySelectorAll('.fnoteBtn'),
-                    totalCount = totalFootNote.length,
-                    html;
+                    htmlTemplate = '<span class="fnoteWrap" id="#wk_ft{FOOTNOTE_INDEX}" contenteditable="false"><button type="button" class="fnoteBtn" data-content="'+fixFootnoteContent+'">{FOOTNOTE_INDEX}</button></span>';
+
+                    var totalFootNote = editor.getDoc().querySelectorAll('.fnoteBtn');
+                    var totalCount = totalFootNote.length;
+                    var html;
 
                 function findNextFD($node)
                 {
@@ -97,8 +100,10 @@ tinymce.PluginManager.add('footnotes', function(editor) {
                     return currentClassNot_NextClass;
                 }
 
-                var nextFD = findNextFD($(editor.selection.getRng().endContainer));
+                // destroy the embedded footnote HTML editor
+                tinymce.activeEditor.destroy();
 
+                var nextFD = findNextFD($(selectedRange));
                 if(nextFD.length) {
                     nextFD = nextFD[0];
                     var foundIdx;
@@ -110,6 +115,7 @@ tinymce.PluginManager.add('footnotes', function(editor) {
                     if (selectIndex < totalCount) {
                         // modify
                         html = replaceTmpl(htmlTemplate,{FOOTNOTE_INDEX : $(totalFootNote[selectIndex-1]).html()});
+                        editor.selection.select(selectedNode);
                     }
                     else {
                         // anywhere add
@@ -132,12 +138,43 @@ tinymce.PluginManager.add('footnotes', function(editor) {
                 });
             }
         });
+        tinymce.init({
+            selector: '#footnote-dialog textarea',
+            content_css: '/css/frontend.css',
+            forced_root_block : 'div',
+            skin: false,
+            branding: false,
+            statusbar: true,
+            menubar: false,
+            plugins: ['link'], 
+            toolbar: 'bold italic | link',
+            setup: function(editor) {
+                editor.on('init', function (e) {
+                    editor.focus();
+                });
+                editor.on('keyup', function(e) {
+                    footnoteText = sanitizeHtml(footnoteText = editor.getContent());
+                });
+                editor.on('change', function(e) {
+                    footnoteText = sanitizeHtml(footnoteText = editor.getContent());
+                });
+            }
+        });
+  
     }
     editor.addCommand('mceFootnotes', showDialog);
     editor.addButton("footnotes", {
-        title : 'footnote',
-        image : tinyMCE.baseURL + '/plugins/footnotes/img/footnotes.png',
+        title : 'Insert footnote',
+        image : tinyMCE.baseURL + '/tinymce/plugins/footnotesHtml/img/footnotes.png',
         onclick: showDialog,
         stateSelector: 'span.fnoteWrap'
     });
+
+    function sanitizeHtml(str) {
+        str = str.replaceAll('"', "&quot;"); // first, replace all double quotes with entity – works for quotes in normal text
+        str = str.replaceAll("'", "&apos;"); // also, replace all single quotes and apostrophes with entity
+        str = str.replace(/(\w+)\s*=\s*((&quot;)(.*?)\3|([^>\s]*)(?=\s|\/>))(?=[^<]*>)/g, "$1='$4'"); // now replace &quot; with single quotes in attributes
+        return str;
+    }
 });
+  
