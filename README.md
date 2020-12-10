@@ -4,6 +4,14 @@ tinymce Editor 4.x / 5.x FootNotes Plugin.
 
 This is a fork of https://github.com/rainywalker/footNotes. Contrary to the original version, this one allows formatting footnotes with HTML (using tinyMCE) and it also supports using double quotes in footnotes.
 
+The footnote plugin button in the menu bar of tinyMCE:
+
+<img src="screenshot_menu.png" />
+
+The footnote plugin dialog:
+
+<img src="screenshot_dialog.png" height="228" />
+
 ## Principle
 
 The text entered in the insert contents window is stored in the 'data-content' attribute. Double quotes and single quotes or apostrophes are replaced with their respective HTML entities. Double quotes in HTML attributes (e.g. the href for a link) will be replaced with single quotes so they don't break the data-content attribute in which they are contained.
