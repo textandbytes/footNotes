@@ -6,7 +6,7 @@ This is a fork of https://github.com/rainywalker/footNotes. Contrary to the orig
 
 ## Principle
 
-The text entered in the insert contents window is stored in the 'data-content' attribute
+The text entered in the insert contents window is stored in the 'data-content' attribute. Double quotes and single quotes or apostrophes are replaced with their respective HTML entities. Double quotes in HTML attributes (e.g. the href for a link) will be replaced with single quotes so they don't break the data-content attribute in which they are contained.
 
 ````
 //html of button inserted in editor
